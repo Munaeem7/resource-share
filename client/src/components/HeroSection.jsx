@@ -1,6 +1,19 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../Context/AuthContext';
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleGetStarted = () => {
+    if (user) {
+      navigate('/dashboard');
+    } else {
+      navigate('/signup');
+    }
+  };
+
   return (
     <section className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800 text-white py-16 px-4">
       <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
@@ -13,29 +26,35 @@ const HeroSection = () => {
             Join thousands of students sharing notes, assignments, and study materials to help each other succeed academically.
           </p>
           
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button className="bg-white text-blue-700 font-semibold py-3 px-6 rounded-lg hover:bg-blue-50 transition duration-300 flex items-center justify-center">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-              </svg>
-              Upload Resources
+          <div className="flex flex-col sm:flex-row gap-4 ">
+            <button 
+              onClick={handleGetStarted}
+              className="bg-white cursor-pointer text-blue-700 font-semibold py-3 px-6 rounded-lg hover:bg-blue-50 transition duration-300 flex items-center justify-center"
+            >
+              {user ? 'Go to Dashboard' : 'Get Started'} 
             </button>
-            <button className="border-2 border-white text-white font-semibold py-3 px-6 rounded-lg hover:bg-white hover:bg-opacity-10 transition duration-300">
-              Browse Materials
-            </button>
+            
+            {!user && (
+              <button 
+                onClick={() => navigate('/signin')}
+                className="border-2 border-white text-white font-semibold py-3 px-6 rounded-lg hover:bg-white hover:bg-opacity-10 transition duration-300"
+              >
+                Sign In
+              </button>
+            )}
           </div>
           
           <div className="flex flex-wrap gap-6 pt-4">
             <div className="flex items-center">
-              <div className="text-3xl font-bold mr-2">10K+</div>
+              <div className="text-3xl font-bold mr-2">10+</div>
               <div className="text-blue-200">Study Resources</div>
             </div>
             <div className="flex items-center">
-              <div className="text-3xl font-bold mr-2">5K+</div>
+              <div className="text-3xl font-bold mr-2">5+</div>
               <div className="text-blue-200">Active Students</div>
             </div>
             <div className="flex items-center">
-              <div className="text-3xl font-bold mr-2">100+</div>
+              <div className="text-3xl font-bold mr-2">10+</div>
               <div className="text-blue-200">Courses</div>
             </div>
           </div>
@@ -84,14 +103,13 @@ const HeroSection = () => {
           <div className="absolute -top-6 -right-6 bg-white rounded-xl shadow-2xl p-4 text-gray-800 w-2/3 transform rotate-6">
             <div className="flex items-center">
               <div className="bg-green-100 rounded-full p-2 mr-3">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                  </svg>
               </div>
               <div>
-                <div className="font-semibold">Lecture Videos</div>
-                <div className="text-xs text-gray-500">Physics Course</div>
+                <div className="font-semibold">Lecture Notes</div>
+                <div className="text-xs text-gray-500">Data Structures</div>
               </div>
             </div>
           </div>

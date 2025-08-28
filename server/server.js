@@ -57,7 +57,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// API Routes
+// API Routes(endpoints)
 app.use('/api/users', userRoutes);
 app.use('/api/resources', resourceRoutes);
 
@@ -97,14 +97,6 @@ process.on('unhandledRejection', (reason, promise) => {
 // Start server
 const server = app.listen(PORT, () => {
   console.log(`✅ Server is running on http://localhost:${PORT}`);
-  console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🗄️  MongoDB: Connected to Atlas`);
-  console.log(`🌐 CORS: Enabled for frontend`);
-  
-  console.log('📋 Available endpoints:');
-  console.log(`   Health check: http://localhost:${PORT}/health`);
-  console.log(`   User API: http://localhost:${PORT}/api/users`);
-  console.log(`   Resources API: http://localhost:${PORT}/api/resources`);
 });
 
 // Graceful shutdown

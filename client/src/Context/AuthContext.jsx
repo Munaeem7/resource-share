@@ -24,13 +24,11 @@ export const AuthProvider = ({ children }) => {
         displayName: username
       });
       
-      // Update local state with the updated user
-      setUser({
-        ...userCredential.user,
-        displayName: username
-      });
+      // Refresh the user to get updated profile
+      const updatedUser = auth.currentUser;
+      setUser(updatedUser);
       
-      return userCredential; // Return the credential for handling in component
+      return userCredential;
     } catch (error) {
       throw error;
     }

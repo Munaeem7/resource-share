@@ -20,9 +20,8 @@ const handleSignin = async (e) => {
   
   try {
     await login(email, password);
-    // Navigation will happen automatically due to auth state change
-    // The onAuthStateChanged listener in AuthContext will update the user
-    // and your protected routes will handle the redirect
+    // The onAuthStateChanged listener in AuthContext will handle navigation
+    setIsLoading(false);
   } catch (err) {
     console.log("Login Error:", err.message);
     setError("Invalid email or password");

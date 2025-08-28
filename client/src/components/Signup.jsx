@@ -53,9 +53,8 @@ const handleSignup = async (e) => {
   
   try {
     await signup(email, password, username);
-    // Navigation will happen automatically due to auth state change
-    // The onAuthStateChanged listener in AuthContext will update the user
-    // and your protected routes will handle the redirect
+    // The onAuthStateChanged listener in AuthContext will handle navigation
+    setIsLoading(false);
   } catch (err) {
     console.log("Signup Error:", err.message);
     setError(err.message);
