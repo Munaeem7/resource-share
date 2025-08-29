@@ -193,6 +193,51 @@ router.put("/:id/download", async (req, res) => {
   }
 });
 
+// GET /api/resources/:id/download-url - Get download URL for a resource
+router.get("/:id/download-url", verifyToken, async (req, res) => {
+  try {
+    const resource = await Resource.findById(req.params.id);
+    
+    if (!resource) {
+      return res.status(404).json({ 
+        success: false,
+        error: "Resource not found" 
+      });
+    }
+
+    let downloadUrl = resource.fileUrl;
+
+    // If using Cloudinary, add parameters to force download
+    if (downloadUrl.includes("cloudinary.com")) {
+      // For all file types, add fl_attachment to force download
+      downloadUrl = downloadUrl.includes("?")
+        ? `${downloadUrl}&fl_attachment`
+        : `${downloadUrl}?fl_attachment`;
+      
+      // For PDFs specifically, add additional parameters if needed
+      if (resource.fileName.toLowerCase().endsWith('.pdf') || 
+          resource.fileType === 'application/pdf') {
+        // You can add additional PDF-specific parameters here if needed
+        downloadUrl += "&flags=attachment";
+      }
+    }
+
+    res.json({
+      success: true,
+      downloadUrl,
+      fileName: resource.fileName,
+      fileType: resource.fileType
+    });
+
+  } catch (error) {
+    console.error("Error generating download URL:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to generate download URL" 
+    });
+  }
+});
+
 // DELETE /api/resources/:id - Delete resource
 router.delete("/:id", verifyToken, async (req, res) => {
   try {

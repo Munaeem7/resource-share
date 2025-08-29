@@ -98,6 +98,38 @@ incrementDownloadCount: async (resourceId) => {
   }
 },
 
+getDownloadUrl: async (resourceId) => {
+  try {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("User not authenticated");
+    }
+
+    const token = await currentUser.getIdToken();
+    
+    const response = await fetch(
+      `${API_BASE_URL}/api/resources/${resourceId}/download-url`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || "Failed to get download URL");
+    }
+
+    const data = await response.json();
+    return data.downloadUrl;
+  } catch (error) {
+    console.error("Error getting download URL:", error);
+    throw error;
+  }
+},
+
   // DELETE resource
   deleteResource: async (resourceId) => {
     // Get the current user's token

@@ -71,72 +71,102 @@ const Dashboard = () => {
   };
 
   const handleDownload = async (resource) => {
-    try {
-      console.log("Starting download for:", resource.fileName);
+  try {
+    console.log("Starting download for:", resource.fileName);
 
-      // 1. First, increment download count (fire and forget)
-      resourceService
-        .incrementDownloadCount(resource._id)
-        .then(() => console.log("Download count updated"))
-        .catch((err) => console.warn("Download count update failed:", err));
+    // 1. Increment download count (fire and forget)
+    resourceService
+      .incrementDownloadCount(resource._id)
+      .then(() => console.log("Download count updated"))
+      .catch((err) => console.warn("Download count update failed:", err));
 
-      // 2. Use fetch + blob method for reliable downloading
-      const response = await fetch(resource.fileUrl);
+    // 2. Fetch the file
+    const response = await fetch(resource.fileUrl);
 
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch file: ${response.status} ${response.statusText}`
-        );
-      }
-
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-
-      // 3. Create download link
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = resource.fileName || resource.title || "download";
-      link.style.display = "none";
-
-      // 4. Trigger download
-      document.body.appendChild(link);
-      link.click();
-
-      // 5. Clean up
-      setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(blobUrl);
-        console.log("Download completed and cleaned up");
-      }, 100);
-
-      // 6. Refresh data
-      setTimeout(() => {
-        fetchData();
-      }, 1000);
-    } catch (error) {
-      console.error("Download error:", error);
-
-      // Fallback: Try direct download with Cloudinary parameters
-      try {
-        let downloadUrl = resource.fileUrl;
-
-        // Add Cloudinary download parameters for fallback
-        if (downloadUrl.includes("cloudinary.com")) {
-          downloadUrl = downloadUrl.includes("?")
-            ? `${downloadUrl}&fl_attachment`
-            : `${downloadUrl}?fl_attachment`;
-        }
-
-        window.open(downloadUrl, "_blank");
-        console.log("Opened fallback download in new tab");
-      } catch (fallbackError) {
-        console.error("Fallback also failed:", fallbackError);
-        alert(
-          `Error downloading file. Please try the direct link: ${resource.fileUrl}`
-        );
-      }
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
     }
-  };
+
+    // 3. Get the original blob
+    const originalBlob = await response.blob();
+
+    // 4. Create a new blob with forced octet-stream type to prevent browser preview (fixes PDF issue)
+    const forceDownloadBlob = new Blob([originalBlob], { type: 'application/octet-stream' });
+
+    // 5. Create blob URL
+    const blobUrl = window.URL.createObjectURL(forceDownloadBlob);
+
+    // 6. Create download link (ensure filename has extension for correct saving)
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    // Use resource.fileName if it includes extension; fallback to title + inferred ext
+    let downloadName = resource.fileName || resource.title || "download";
+    if (!downloadName.includes('.')) {
+      // Infer extension from fileUrl or type (optional enhancement)
+      if (resource.fileUrl.endsWith('.pdf')) downloadName += '.pdf';
+      else if (resource.fileUrl.endsWith('.docx')) downloadName += '.docx';
+      // Add more if needed for images, etc.
+    }
+    link.download = downloadName;
+    link.style.display = "none";
+
+    // 7. Trigger download
+    document.body.appendChild(link);
+    link.click();
+
+    // 8. Clean up
+    setTimeout(() => {
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      console.log("Download completed and cleaned up");
+    }, 100);
+
+    // 9. Refresh data
+    setTimeout(() => {
+      fetchData();
+    }, 1000);
+  } catch (error) {
+    console.error("Download error:", error);
+
+    // Fallback: Correctly add fl_attachment to Cloudinary URL and open in new tab
+    try {
+      let downloadUrl = addAttachmentToCloudinaryUrl(resource.fileUrl); // Use helper function below
+      window.open(downloadUrl, "_blank");
+      console.log("Opened fallback download in new tab with corrected URL");
+    } catch (fallbackError) {
+      console.error("Fallback also failed:", fallbackError);
+      alert(`Error downloading file. Please try the direct link: ${resource.fileUrl}`);
+    }
+  }
+};
+
+// Helper function to correctly add fl_attachment to Cloudinary URL
+const addAttachmentToCloudinaryUrl = (url) => {
+  if (!url.includes("cloudinary.com")) {
+    return url; // Not Cloudinary; return as-is
+  }
+
+  // Find the position after '/upload/' or '/raw/' (common for non-images)
+  const uploadIndex = url.indexOf('/upload/');
+  const rawIndex = url.indexOf('/raw/'); // For raw resources like DOCX/PDF
+
+  if (uploadIndex !== -1) {
+    // Insert /fl_attachment/ after /upload/
+    return url.slice(0, uploadIndex + 8) + 'fl_attachment/' + url.slice(uploadIndex + 8);
+  } else if (rawIndex !== -1) {
+    // Insert /fl_attachment/ after /raw/ (assuming /raw/upload/ structure)
+    const adjustedIndex = url.indexOf('/upload/', rawIndex);
+    if (adjustedIndex !== -1) {
+      return url.slice(0, adjustedIndex + 8) + 'fl_attachment/' + url.slice(adjustedIndex + 8);
+    } else {
+      // Fallback for /raw/ without /upload/
+      return url.slice(0, rawIndex + 5) + 'fl_attachment/' + url.slice(rawIndex + 5);
+    }
+  }
+
+  // If no match, append as best-effort (rare case)
+  return url.replace(/\/v\d+\//, '/fl_attachment/v$&'); // Insert before version
+};
 
   const handleDeleteResource = async (resourceId) => {
     try {
