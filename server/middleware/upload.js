@@ -1,6 +1,6 @@
-import multer from "multer";
-import { CloudinaryStorage } from "multer-storage-cloudinary";
-import { v2 as cloudinary } from "cloudinary";
+import multer from 'multer';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import { v2 as cloudinary } from 'cloudinary';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -12,9 +12,25 @@ cloudinary.config({
 // Set up storage for multer
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: {
-    folder: "resources", // Folder in Cloudinary
-    resource_type: "auto", // auto = handles images, pdf, docs
+  params: async (req, file) => {
+    // Dynamically determine resource_type based on MIME type
+    let resourceType = 'image'; // Default for images
+    if (file.mimetype.startsWith('application/')) {
+      if (
+        file.mimetype === 'application/pdf' ||
+        file.mimetype === 'application/msword' ||
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.mimetype === 'text/plain'
+      ) {
+        resourceType = 'raw'; // Use 'raw' for PDFs, DOCX, DOC, and TXT
+      }
+    }
+
+    return {
+      folder: 'resources', // Folder in Cloudinary
+      resource_type: resourceType,
+      public_id: file.originalname.replace(/\.[^/.]+$/, ''), // Remove extension for cleaner URLs
+    };
   },
 });
 
@@ -33,15 +49,20 @@ const upload = multer({
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
+      'text/plain',
     ];
-    
+
     if (allowedTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error(`File type ${file.mimetype} is not allowed. Allowed types: PDF, DOC, DOCX, JPG, PNG, TXT`), false);
+      cb(
+        new Error(
+          `File type ${file.mimetype} is not allowed. Allowed types: PDF, DOC, DOCX, JPG, PNG, TXT`
+        ),
+        false
+      );
     }
-  }
+  },
 });
 
 export default upload;
