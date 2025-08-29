@@ -37,7 +37,7 @@ const HeroSection = () => {
             {!user && (
               <button 
                 onClick={() => navigate('/signin')}
-                className="border-2 border-white text-white font-semibold py-3 px-6 rounded-lg hover:bg-white hover:bg-opacity-10 transition duration-300"
+                className="border-2 border-white hover:text-blue-700 cursor-pointer text-white font-semibold py-3 px-6 rounded-lg hover:bg-white hover:bg-opacity-10  transition duration-300"
               >
                 Sign In
               </button>

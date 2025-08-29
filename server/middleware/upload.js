@@ -15,14 +15,16 @@ const storage = new CloudinaryStorage({
   params: async (req, file) => {
     // Dynamically determine resource_type based on MIME type
     let resourceType = 'image'; // Default for images
-    if (file.mimetype.startsWith('application/')) {
+    if (file.mimetype.startsWith('application/') || file.mimetype === 'text/plain') {
       if (
         file.mimetype === 'application/pdf' ||
         file.mimetype === 'application/msword' ||
         file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
-        file.mimetype === 'text/plain'
+        file.mimetype === 'text/plain' ||
+        file.mimetype === 'application/zip' ||
+        file.mimetype === 'application/x-7z-compressed'
       ) {
-        resourceType = 'raw'; // Use 'raw' for PDFs, DOCX, DOC, and TXT
+        resourceType = 'raw'; // Use 'raw' for PDFs, DOCX, DOC, TXT, ZIP, 7Z
       }
     }
 
@@ -38,7 +40,7 @@ const storage = new CloudinaryStorage({
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 50 * 1024 * 1024, // 50MB limit
   },
   fileFilter: (req, file, cb) => {
     // Allow certain file types
@@ -50,6 +52,8 @@ const upload = multer({
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       'text/plain',
+      'application/zip', // Allow .zip
+      'application/x-7z-compressed', // Allow .7z
     ];
 
     if (allowedTypes.includes(file.mimetype)) {
@@ -57,7 +61,7 @@ const upload = multer({
     } else {
       cb(
         new Error(
-          `File type ${file.mimetype} is not allowed. Allowed types: PDF, DOC, DOCX, JPG, PNG, TXT`
+          `File type ${file.mimetype} is not allowed. Allowed types: PDF, DOC, DOCX, JPG, PNG, TXT, ZIP, 7Z`
         ),
         false
       );
