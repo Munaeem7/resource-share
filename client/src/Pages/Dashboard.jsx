@@ -207,7 +207,7 @@ const addAttachmentToCloudinaryUrl = (url) => {
             </div>
             <button
               onClick={() => setShowUploadForm(!showUploadForm)}
-              className="mt-4 md:mt-0 px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg shadow-md hover:bg-blue-50 transition duration-200"
+              className="mt-4 cursor-pointer md:mt-0 px-6 py-3 bg-white text-blue-600 font-semibold rounded-lg shadow-md hover:bg-blue-50 transition duration-200"
             >
               {showUploadForm ? "Cancel Upload" : "Upload New Resource"}
             </button>

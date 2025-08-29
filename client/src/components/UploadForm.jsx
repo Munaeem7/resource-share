@@ -67,7 +67,7 @@ const UploadForm = ({ onUploadSuccess }) => {
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 max-w-lg mx-auto">
+    <div className="bg-white p-6 rounded-2xl mb-5 shadow-lg border border-gray-200 max-w-lg mx-auto">
       <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
         📚 Upload Study Resource
       </h2>
@@ -100,12 +100,12 @@ const UploadForm = ({ onUploadSuccess }) => {
               type="file"
               className="hidden"
               onChange={handleFileChange}
-              accept=".zip,.rar,.7z,.tar,.gz,.pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.mp4,.mp3"
+              accept=".zip,.7z,.pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.mp4,.mp3"
             />
           </label>
           {file && (
             <p className="mt-2 text-sm text-green-600 font-medium">
-              ✅ {file.name} ({formatFileSize(file.size)})
+              {file.name} ({formatFileSize(file.size)})
               {file.name.match(/\.(zip|rar|7z|tar|gz)$/i) && (
                 <span className="text-blue-500 ml-2">📦 Compressed folder</span>
               )}
@@ -182,7 +182,7 @@ const UploadForm = ({ onUploadSuccess }) => {
         <button
           type="submit"
           disabled={isUploading}
-          className="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center font-medium"
+          className="w-full bg-blue-600 cursor-pointer text-white px-4 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 flex items-center justify-center font-medium"
         >
           {isUploading ? (
             <>
@@ -209,7 +209,7 @@ const UploadForm = ({ onUploadSuccess }) => {
               Uploading...
             </>
           ) : (
-            "🚀 Upload Resource"
+            "Upload Resource"
           )}
         </button>
       </form>
