@@ -38,6 +38,10 @@ const ProfilePage = () => {
     navigate("/signin");
   };
 
+  const handleBackToDashboard = () => {
+    navigate("/dashboard");
+  };
+
   // Simple icons
   const UserIcon = () => (
     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -74,12 +78,26 @@ const ProfilePage = () => {
     </svg>
   );
 
+  const ArrowLeftIcon = () => (
+    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+    </svg>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 py-6 px-4">
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <header className="bg-white rounded-xl shadow-md p-6 mb-6 flex flex-col sm:flex-row justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-3 sm:mb-0">Profile Settings</h1>
+          <div className="flex items-center mb-3 sm:mb-0">
+            <button
+              onClick={handleBackToDashboard}
+              className="flex items-center text-gray-600 cursor-pointer hover:text-gray-800 mr-4 transition-colors"
+            >
+              <ArrowLeftIcon />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-800">Profile Settings</h1>
+          </div>
           <div className="flex items-center space-x-6">
             <div
               className={`flex items-center text-sm px-2 py-1 rounded-2xl ${
@@ -108,10 +126,10 @@ const ProfilePage = () => {
                   <img
                     src={user.photoURL}
                     alt="Profile"
-                    className="h-26 w-26 rounded-full object-cover border-4 border-white shadow-lg"
+                    className="h-24 w-24 rounded-full object-cover border-4 border-white shadow-lg"
                   />
                 ) : (
-                  <div className="h-26 w-26 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 flex items-center justify-center text-white border-4 border-white shadow-lg">
+                  <div className="h-24 w-24 rounded-full bg-gradient-to-r from-blue-400 to-indigo-500 flex items-center justify-center text-white border-4 border-white shadow-lg">
                     <UserIcon />
                   </div>
                 )}
