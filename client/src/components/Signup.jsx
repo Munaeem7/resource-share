@@ -55,6 +55,7 @@ const handleSignup = async (e) => {
     await signup(email, password, username);
     // The onAuthStateChanged listener in AuthContext will handle navigation
     setIsLoading(false);
+    navigate("/dashboard");
   } catch (err) {
     console.log("Signup Error:", err.message);
     setError(err.message);

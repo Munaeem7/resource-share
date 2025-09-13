@@ -22,6 +22,7 @@ const handleSignin = async (e) => {
     await login(email, password);
     // The onAuthStateChanged listener in AuthContext will handle navigation
     setIsLoading(false);
+    navigate("/dashboard");
   } catch (err) {
     console.log("Login Error:", err.message);
     setError("Invalid email or password");

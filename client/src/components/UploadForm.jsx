@@ -9,51 +9,48 @@ const UploadForm = ({ onUploadSuccess }) => {
   const [subject, setSubject] = useState("");
   const [category, setCategory] = useState("notes");
   const [isUploading, setIsUploading] = useState(false);
-  const [message, setMessage] = useState(null); // ✅ custom message state
   const { user } = useAuth();
 
-  // Format file size
+  // Add this function to format file sizes
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return "0 Bytes";
+    if (bytes === 0) return '0 Bytes';
     const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
   };
 
-  const showMessage = (text, type = "info") => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage(null), 4000); // auto hide after 4s
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // ✅ validations
     if (!file || !title || !subject) {
-      showMessage("⚠️ Please fill all required fields", "warning");
+      alert("⚠️ Please fill all required fields");
       return;
     }
-
+    
+    // Increased size limit for compressed files
     if (file.size > 50 * 1024 * 1024) {
-      showMessage("⚠️ File size must be less than 50MB", "warning");
+      alert("⚠️ File size must be less than 50MB");
       return;
     }
 
     setIsUploading(true);
     try {
+      // Get Firebase token first
       const token = await user.getIdToken();
-
+      
       await resourceService.uploadResource(
         file,
         { title, description, subject, category },
         token
       );
 
-      // Reset form
+      // reset form
       setFile(null);
       setTitle("");
       setDescription("");
@@ -61,13 +58,10 @@ const UploadForm = ({ onUploadSuccess }) => {
       setCategory("notes");
 
       if (onUploadSuccess) onUploadSuccess();
-      showMessage("✅ Resource uploaded successfully!", "success");
+      alert("✅ Resource uploaded successfully!");
     } catch (error) {
       console.error("Upload error:", error);
-      showMessage(
-        "❌ Error uploading resource: " + (error.message || "Unknown error"),
-        "error"
-      );
+      alert("❌ Error uploading resource: " + (error.message || "Unknown error"));
     }
     setIsUploading(false);
   };
@@ -75,23 +69,8 @@ const UploadForm = ({ onUploadSuccess }) => {
   return (
     <div className="bg-white p-6 rounded-2xl mb-5 shadow-lg border border-gray-200 max-w-lg mx-auto">
       <h2 className="text-2xl font-bold text-gray-800 mb-5 flex items-center">
-        📚 Upload Study Resource
+        📚 Upload Resource
       </h2>
-
-      {/* ✅ Custom Message Banner */}
-      {message && (
-        <div
-          className={`mb-4 p-3 rounded-lg text-sm font-medium transition ${
-            message.type === "success"
-              ? "bg-green-100 text-green-700 border border-green-300"
-              : message.type === "error"
-              ? "bg-red-100 text-red-700 border border-red-300"
-              : "bg-yellow-100 text-yellow-700 border border-yellow-300"
-          }`}
-        >
-          {message.text}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* File Upload */}
@@ -106,13 +85,12 @@ const UploadForm = ({ onUploadSuccess }) => {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                viewBox="0 0 24 24"
+                viewBox="0 极 24 24"
               >
                 <path d="M7 16V4m0 0l-4 4m4-4l4 4M17 8v12m0 0l4-4m-4 4l-4-4"></path>
               </svg>
               <p className="text-sm text-gray-500">
-                <span className="font-semibold">Click to upload</span> or drag &
-                drop
+                <span className="font-semibold">Click to upload</span>
               </p>
               <p className="text-xs text-gray-400">
                 ZIP, PDF, DOCX, TXT, JPG, PNG (Max 50MB)
@@ -129,7 +107,7 @@ const UploadForm = ({ onUploadSuccess }) => {
             <p className="mt-2 text-sm text-green-600 font-medium">
               {file.name} ({formatFileSize(file.size)})
               {file.name.match(/\.(zip|rar|7z|tar|gz)$/i) && (
-                <span className="text-blue-500 ml-2">📦 Compressed folder</span>
+                <span className="text-blue-500 ml-2">Compressed folder</span>
               )}
             </p>
           )}

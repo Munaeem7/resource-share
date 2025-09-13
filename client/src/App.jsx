@@ -6,6 +6,7 @@ import About from './Pages/About'
 import Contact from './Pages/Contact'
 import Navbar from './components/Navbar'
 import Signin from './components/Signin'
+import ProfilePage from './Pages/Profilepage'
 import Signup from './components/Signup'
 import Dashboard from './Pages/Dashboard'
 import ProtectedRoute from './components/ProtectedRoutes'
@@ -29,6 +30,15 @@ const AppRoutes = () => {
           <Dashboard/>
         </ProtectedRoute>
       }/>
+
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
       
       <Route path='*' element={<Navigate to='/' />} />
     </Routes>
