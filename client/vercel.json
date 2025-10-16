@@ -10,7 +10,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "https://resource-share.railway.internal/api/$1"
+      "dest": "https://resource-share-production.up.railway.app/api/$1"
     },
     {
       "src": "/(.*\\.(js|css|png|jpg|svg|ico))$",
