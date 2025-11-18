@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../Context/AuthContext";
 import UploadForm from "../components/UploadForm";
 import ResourceList from "../components/ResourceList";
@@ -6,6 +7,7 @@ import resourceService from "../Services/resourceService";
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate(); // ADD THIS HOOK
   const [activeTab, setActiveTab] = useState("resources");
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [resources, setResources] = useState([]);
@@ -71,102 +73,102 @@ const Dashboard = () => {
   };
 
   const handleDownload = async (resource) => {
-  try {
-    console.log("Starting download for:", resource.fileName);
-
-    // 1. Increment download count (fire and forget)
-    resourceService
-      .incrementDownloadCount(resource._id)
-      .then(() => console.log("Download count updated"))
-      .catch((err) => console.warn("Download count update failed:", err));
-
-    // 2. Fetch the file
-    const response = await fetch(resource.fileUrl);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
-    }
-
-    // 3. Get the original blob
-    const originalBlob = await response.blob();
-
-    // 4. Create a new blob with forced octet-stream type to prevent browser preview (fixes PDF issue)
-    const forceDownloadBlob = new Blob([originalBlob], { type: 'application/octet-stream' });
-
-    // 5. Create blob URL
-    const blobUrl = window.URL.createObjectURL(forceDownloadBlob);
-
-    // 6. Create download link (ensure filename has extension for correct saving)
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    // Use resource.fileName if it includes extension; fallback to title + inferred ext
-    let downloadName = resource.fileName || resource.title || "download";
-    if (!downloadName.includes('.')) {
-      // Infer extension from fileUrl or type (optional enhancement)
-      if (resource.fileUrl.endsWith('.pdf')) downloadName += '.pdf';
-      else if (resource.fileUrl.endsWith('.docx')) downloadName += '.docx';
-      // Add more if needed for images, etc.
-    }
-    link.download = downloadName;
-    link.style.display = "none";
-
-    // 7. Trigger download
-    document.body.appendChild(link);
-    link.click();
-
-    // 8. Clean up
-    setTimeout(() => {
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-      console.log("Download completed and cleaned up");
-    }, 100);
-
-    // 9. Refresh data
-    setTimeout(() => {
-      fetchData();
-    }, 1000);
-  } catch (error) {
-    console.error("Download error:", error);
-
-    // Fallback: Correctly add fl_attachment to Cloudinary URL and open in new tab
     try {
-      let downloadUrl = addAttachmentToCloudinaryUrl(resource.fileUrl); // Use helper function below
-      window.open(downloadUrl, "_blank");
-      console.log("Opened fallback download in new tab with corrected URL");
-    } catch (fallbackError) {
-      console.error("Fallback also failed:", fallbackError);
-      alert(`Error downloading file. Please try the direct link: ${resource.fileUrl}`);
+      console.log("Starting download for:", resource.fileName);
+
+      // 1. Increment download count (fire and forget)
+      resourceService
+        .incrementDownloadCount(resource._id)
+        .then(() => console.log("Download count updated"))
+        .catch((err) => console.warn("Download count update failed:", err));
+
+      // 2. Fetch the file
+      const response = await fetch(resource.fileUrl);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch file: ${response.status} ${response.statusText}`);
+      }
+
+      // 3. Get the original blob
+      const originalBlob = await response.blob();
+
+      // 4. Create a new blob with forced octet-stream type to prevent browser preview (fixes PDF issue)
+      const forceDownloadBlob = new Blob([originalBlob], { type: 'application/octet-stream' });
+
+      // 5. Create blob URL
+      const blobUrl = window.URL.createObjectURL(forceDownloadBlob);
+
+      // 6. Create download link (ensure filename has extension for correct saving)
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      // Use resource.fileName if it includes extension; fallback to title + inferred ext
+      let downloadName = resource.fileName || resource.title || "download";
+      if (!downloadName.includes('.')) {
+        // Infer extension from fileUrl or type (optional enhancement)
+        if (resource.fileUrl.endsWith('.pdf')) downloadName += '.pdf';
+        else if (resource.fileUrl.endsWith('.docx')) downloadName += '.docx';
+        // Add more if needed for images, etc.
+      }
+      link.download = downloadName;
+      link.style.display = "none";
+
+      // 7. Trigger download
+      document.body.appendChild(link);
+      link.click();
+
+      // 8. Clean up
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(blobUrl);
+        console.log("Download completed and cleaned up");
+      }, 100);
+
+      // 9. Refresh data
+      setTimeout(() => {
+        fetchData();
+      }, 1000);
+    } catch (error) {
+      console.error("Download error:", error);
+
+      // Fallback: Correctly add fl_attachment to Cloudinary URL and open in new tab
+      try {
+        let downloadUrl = addAttachmentToCloudinaryUrl(resource.fileUrl); // Use helper function below
+        window.open(downloadUrl, "_blank");
+        console.log("Opened fallback download in new tab with corrected URL");
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+        alert(`Error downloading file. Please try the direct link: ${resource.fileUrl}`);
+      }
     }
-  }
-};
+  };
 
-// Helper function to correctly add fl_attachment to Cloudinary URL
-const addAttachmentToCloudinaryUrl = (url) => {
-  if (!url.includes("cloudinary.com")) {
-    return url; // Not Cloudinary; return as-is
-  }
-
-  // Find the position after '/upload/' or '/raw/' (common for non-images)
-  const uploadIndex = url.indexOf('/upload/');
-  const rawIndex = url.indexOf('/raw/'); // For raw resources like DOCX/PDF
-
-  if (uploadIndex !== -1) {
-    // Insert /fl_attachment/ after /upload/
-    return url.slice(0, uploadIndex + 8) + 'fl_attachment/' + url.slice(uploadIndex + 8);
-  } else if (rawIndex !== -1) {
-    // Insert /fl_attachment/ after /raw/ (assuming /raw/upload/ structure)
-    const adjustedIndex = url.indexOf('/upload/', rawIndex);
-    if (adjustedIndex !== -1) {
-      return url.slice(0, adjustedIndex + 8) + 'fl_attachment/' + url.slice(adjustedIndex + 8);
-    } else {
-      // Fallback for /raw/ without /upload/
-      return url.slice(0, rawIndex + 5) + 'fl_attachment/' + url.slice(rawIndex + 5);
+  // Helper function to correctly add fl_attachment to Cloudinary URL
+  const addAttachmentToCloudinaryUrl = (url) => {
+    if (!url.includes("cloudinary.com")) {
+      return url; // Not Cloudinary; return as-is
     }
-  }
 
-  // If no match, append as best-effort (rare case)
-  return url.replace(/\/v\d+\//, '/fl_attachment/v$&'); // Insert before version
-};
+    // Find the position after '/upload/' or '/raw/' (common for non-images)
+    const uploadIndex = url.indexOf('/upload/');
+    const rawIndex = url.indexOf('/raw/'); // For raw resources like DOCX/PDF
+
+    if (uploadIndex !== -1) {
+      // Insert /fl_attachment/ after /upload/
+      return url.slice(0, uploadIndex + 8) + 'fl_attachment/' + url.slice(uploadIndex + 8);
+    } else if (rawIndex !== -1) {
+      // Insert /fl_attachment/ after /raw/ (assuming /raw/upload/ structure)
+      const adjustedIndex = url.indexOf('/upload/', rawIndex);
+      if (adjustedIndex !== -1) {
+        return url.slice(0, adjustedIndex + 8) + 'fl_attachment/' + url.slice(adjustedIndex + 8);
+      } else {
+        // Fallback for /raw/ without /upload/
+        return url.slice(0, rawIndex + 5) + 'fl_attachment/' + url.slice(rawIndex + 5);
+      }
+    }
+
+    // If no match, append as best-effort (rare case)
+    return url.replace(/\/v\d+\//, '/fl_attachment/v$&'); // Insert before version
+  };
 
   const handleDeleteResource = async (resourceId) => {
     try {
@@ -179,6 +181,16 @@ const addAttachmentToCloudinaryUrl = (url) => {
       alert("Error deleting resource");
     }
   };
+
+const handleViewResource = (resource) => {
+
+  
+  if (resource._id) {
+    navigate(`/resource/${resource._id}`);
+  } else {
+    alert("Error: Resource ID not found");
+  }
+};
 
   if (isLoading) {
     return (
@@ -402,6 +414,7 @@ const addAttachmentToCloudinaryUrl = (url) => {
                   <ResourceList
                     resources={resources}
                     onDownload={handleDownload}
+                    onView={handleViewResource}
                     showActions={false}
                   />
                 )}
@@ -449,6 +462,7 @@ const addAttachmentToCloudinaryUrl = (url) => {
                     resources={userResources}
                     onDownload={handleDownload}
                     onDelete={handleDeleteResource}
+                    onView={handleViewResource}
                     showActions={true}
                   />
                 )}
@@ -497,7 +511,7 @@ const addAttachmentToCloudinaryUrl = (url) => {
                           strokeLinecap="round"
                           strokeLinejoin="round"
                           strokeWidth="2"
-                          d="M14 10h4.764a2 2 极 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905a3.61 3.61 0 01-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
+                          d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905a3.61 3.61 0 01-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"
                         ></path>
                       </svg>
                     </div>

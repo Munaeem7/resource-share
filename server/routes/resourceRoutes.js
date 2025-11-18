@@ -23,7 +23,7 @@ router.post('/upload', verifyToken, uploadWithErrorHandling, async (req, res) =>
     }
 
     // Validate required fields
-    if (!req.body.title || !req.body.subject) {
+    if (!req.body.title || !req.body.subject || !req.body.category) {
       // Clean up the uploaded file since validation failed
       if (req.file.filename) {
         try {
@@ -36,7 +36,7 @@ router.post('/upload', verifyToken, uploadWithErrorHandling, async (req, res) =>
 
       return res.status(400).json({
         success: false,
-        error: 'Title and subject are required fields',
+        error: 'Title, subject, and category are required fields',
       });
     }
 
@@ -45,7 +45,7 @@ router.post('/upload', verifyToken, uploadWithErrorHandling, async (req, res) =>
       title: req.body.title,
       description: req.body.description || '',
       subject: req.body.subject,
-      category: req.body.category || 'notes',
+      category: req.body.category,
       fileUrl: req.file.path,
       fileName: req.file.originalname,
       fileType: req.file.mimetype,
@@ -56,13 +56,14 @@ router.post('/upload', verifyToken, uploadWithErrorHandling, async (req, res) =>
     });
 
     await newResource.save();
-    console.log('Resource saved successfully with ID:', newResource._id);
+    console.log('Resource saved successfully with ID:', newResource._id, 'Slug:', newResource.slug);
 
     res.status(201).json({
       success: true,
       message: 'Resource uploaded successfully',
       resource: {
         id: newResource._id,
+        slug: newResource.slug, // Return slug to frontend
         title: newResource.title,
         fileUrl: newResource.fileUrl,
         createdAt: newResource.createdAt,
@@ -89,7 +90,39 @@ router.post('/upload', verifyToken, uploadWithErrorHandling, async (req, res) =>
       errorMessage = 'Validation error: ' + Object.values(error.errors).map(e => e.message).join(', ');
       statusCode = 400;
     } else if (error.name === 'MongoError' && error.code === 11000) {
-      errorMessage = 'Duplicate resource detected';
+      // Handle duplicate slug (very rare but possible)
+      if (error.keyPattern && error.keyPattern.slug) {
+        // Retry with a different random string
+        try {
+          const retryResource = new Resource({
+            ...req.body,
+            fileUrl: req.file.path,
+            fileName: req.file.originalname,
+            fileType: req.file.mimetype,
+            fileSize: req.file.size,
+            uploaderId: req.user.uid,
+            uploaderName: req.user.name || req.user.email,
+            cloudinaryId: req.file.filename,
+          });
+          await retryResource.save();
+          
+          return res.status(201).json({
+            success: true,
+            message: 'Resource uploaded successfully',
+            resource: {
+              id: retryResource._id,
+              slug: retryResource.slug,
+              title: retryResource.title,
+              fileUrl: retryResource.fileUrl,
+              createdAt: retryResource.createdAt,
+            },
+          });
+        } catch (retryError) {
+          errorMessage = 'Failed to create resource after slug conflict';
+        }
+      } else {
+        errorMessage = 'Duplicate resource detected';
+      }
       statusCode = 409;
     }
 
@@ -119,7 +152,32 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/resources/:id - Get single resource
+// GET /api/resources/slug/:slug - Get resource by slug
+router.get('/slug/:slug', async (req, res) => {
+  try {
+    const resource = await Resource.findOne({ slug: req.params.slug });
+    
+    if (!resource) {
+      return res.status(404).json({
+        success: false,
+        error: 'Resource not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      resource,
+    });
+  } catch (error) {
+    console.error('Error fetching resource by slug:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch resource',
+    });
+  }
+});
+
+// GET /api/resources/:id - Get single resource by ID
 router.get('/:id', async (req, res) => {
   try {
     const resource = await Resource.findById(req.params.id);
@@ -147,6 +205,36 @@ router.put('/:id/download', async (req, res) => {
   try {
     const resource = await Resource.findByIdAndUpdate(
       req.params.id,
+      { $inc: { downloadCount: 1 } },
+      { new: true }
+    );
+
+    if (!resource) {
+      return res.status(404).json({
+        success: false,
+        error: 'Resource not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      downloadCount: resource.downloadCount,
+      resource,
+    });
+  } catch (error) {
+    console.error('Error updating download count:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update download count',
+    });
+  }
+});
+
+// PUT /api/resources/slug/:slug/download - Increment download count by slug
+router.put('/slug/:slug/download', async (req, res) => {
+  try {
+    const resource = await Resource.findOneAndUpdate(
+      { slug: req.params.slug },
       { $inc: { downloadCount: 1 } },
       { new: true }
     );
@@ -201,7 +289,36 @@ router.get('/:id/download-url', verifyToken, async (req, res) => {
   }
 });
 
-// DELETE /api/resources/:id - Delete resource
+// GET /api/resources/slug/:slug/download-url - Get download URL by slug
+router.get('/slug/:slug/download-url', verifyToken, async (req, res) => {
+  try {
+    const resource = await Resource.findOne({ slug: req.params.slug });
+
+    if (!resource) {
+      return res.status(404).json({
+        success: false,
+        error: 'Resource not found',
+      });
+    }
+
+    const downloadUrl = addAttachmentToCloudinaryUrl(resource.fileUrl);
+
+    res.json({
+      success: true,
+      downloadUrl,
+      fileName: resource.fileName,
+      fileType: resource.fileType,
+    });
+  } catch (error) {
+    console.error('Error generating download URL:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to generate download URL',
+    });
+  }
+});
+
+// DELETE /api/resources/:id - Delete resource by ID
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const resource = await Resource.findById(req.params.id);
@@ -234,6 +351,53 @@ router.delete('/:id', verifyToken, async (req, res) => {
 
     // Delete from MongoDB
     await Resource.findByIdAndDelete(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'Resource deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting resource:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete resource',
+    });
+  }
+});
+
+// DELETE /api/resources/slug/:slug - Delete resource by slug
+router.delete('/slug/:slug', verifyToken, async (req, res) => {
+  try {
+    const resource = await Resource.findOne({ slug: req.params.slug });
+
+    if (!resource) {
+      return res.status(404).json({
+        success: false,
+        error: 'Resource not found',
+      });
+    }
+
+    // Check if user owns the resource
+    if (resource.uploaderId !== req.user.uid) {
+      return res.status(403).json({
+        success: false,
+        error: 'Not authorized to delete this resource',
+      });
+    }
+
+    // Delete from Cloudinary first
+    if (resource.cloudinaryId) {
+      try {
+        await cloudinary.uploader.destroy(resource.cloudinaryId);
+        console.log('Deleted file from Cloudinary:', resource.cloudinaryId);
+      } catch (cloudinaryError) {
+        console.error('Error deleting from Cloudinary:', cloudinaryError);
+        // Continue with MongoDB deletion even if Cloudinary deletion fails
+      }
+    }
+
+    // Delete from MongoDB
+    await Resource.findOneAndDelete({ slug: req.params.slug });
 
     res.json({
       success: true,
